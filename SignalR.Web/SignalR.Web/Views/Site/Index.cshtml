@@ -1,0 +1,60 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>title</title>
+    <script src="~/Scripts/jquery-1.6.4.min.js"></script>
+    <script src="~/Scripts/jquery.signalR.min.js"></script>
+    <script src="@Url.Content("~/signalr/hubs")" type="text/javascript"></script>
+
+
+    <script type="text/javascript">
+        var PosX = 0, PosY = 0;
+        var isPressed = false;
+        $(document).ready(function () {
+            var positionHub = $.connection.positionHub;
+            $("#ball").mousedown(function (e) {
+                isPressed = true;
+            });
+            $("#ball").mouseup(function (e) {
+                isPressed = false;
+            });
+
+            $(document).mousemove(function (e) {
+
+                if (isPressed) {
+                    PosX = e.pageX;
+                    PosY = e.pageY;
+                    $("#ball").css({ left: PosX + "px", top: PosY + "px" });
+                    positionHub.objectPosition(PosX, PosY);
+                }
+            });
+
+            positionHub.setNewPosition = function (x, y) {
+                PosX = x;
+                PosY = y;
+                $("#ball").css({ left: PosX + "px", top: PosY + "px" });
+            };
+
+            setTimeout(function() {
+                positionHub.askCurrentPosition();
+            }, 1000);
+
+            $.connection.hub.start();
+            
+            
+
+            
+        });
+
+    </script>
+</head>
+<body>
+    <div>
+        <div style="-webkit-border-radius: 10px; background: gray; border: 1px solid black; width: 80px; height: 80px; position: absolute;" id="ball">&nbsp;</div>
+    </div>
+</body>
