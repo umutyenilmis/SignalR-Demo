@@ -9,14 +9,12 @@ namespace SignalR.Web.SignalrHub
         {
             
         }
-
         public void ObjectPosition(int x, int y)
         {
             var caller = Clients.Caller;
 
             Clients.setNewPosition(x, y);
         }
-
         public void AskCurrentPosition()
         {
             Clients.setNewPosition(400, 300);
