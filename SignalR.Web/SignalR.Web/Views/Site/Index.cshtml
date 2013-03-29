@@ -8,15 +8,33 @@
 <head>
     <title>title</title>
     <script src="~/Scripts/jquery-1.6.4.min.js"></script>
-    <script src="~/Scripts/jquery.signalR.min.js"></script>
+    <script src="~/Scripts/jquery.signalR-1.0.1.min.js"></script>
     <script src="@Url.Content("~/signalr/hubs")" type="text/javascript"></script>
 
 
     <script type="text/javascript">
         var PosX = 0, PosY = 0;
         var isPressed = false;
+        var UserName = null;
+        var positionHub = $.connection.positionHub;
+       
+        function goodbye(e) {
+            if (!e) e = window.event;
+            
+            e.cancelBubble = true;
+            e.returnValue = 'You sure you want to leave?';
+            
+            if (e.stopPropagation) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }
+        window.onbeforeunload = goodbye;
+       
+        
         $(document).ready(function () {
-            var positionHub = $.connection.positionHub;
+            
+            UserName = prompt("Who the fuck you are?", "Choose Your NickName");
             $("#ball").mousedown(function (e) {
                 isPressed = true;
             });
@@ -25,36 +43,74 @@
             });
 
             $(document).mousemove(function (e) {
-
                 if (isPressed) {
-                    PosX = e.pageX;
-                    PosY = e.pageY;
+                    PosX = e.pageX - 40;
+                    PosY = e.pageY - 40;
                     $("#ball").css({ left: PosX + "px", top: PosY + "px" });
-                    positionHub.objectPosition(PosX, PosY);
+                    positionHub.server.objectPosition(PosX, PosY);
                 }
             });
-
-            positionHub.setNewPosition = function (x, y) {
+            positionHub.client.requestPosition = function () {
+                positionHub.server.objectPosition(PosX, PosY);
+            };
+            positionHub.client.setNewPosition = function (x, y) {
                 PosX = x;
                 PosY = y;
-                $("#ball").css({ left: PosX + "px", top: PosY + "px" });
+                $("#ball").css({ left: PosX + "px", top: PosY + "px", display: "block" });
             };
 
-            setTimeout(function() {
-                positionHub.askCurrentPosition();
-            }, 1000);
+            positionHub.client.dispatchMessage = function(msg,userName) {
+                $("#chatHistory").append("<i><b>" + userName + "</i> : <span class='red'>" + msg + "</span><br/>");
+            };
+            positionHub.client.dispatchUserJoined = function (userName) {
+                $("#chatHistory").append("<i class='green'>" + userName + " joined the Chat.</i><br/>");
+            };
+            
+            positionHub.client.userLeft = function (userName) {
+                $("#chatHistory").append("<i class='red'>" + userName + " left the Chat.</i><br/>");
+            };
 
-            $.connection.hub.start();
-            
-            
-
-            
+            $("#chatInput").keydown(function(e) {
+                if (e.which == 13) {
+                    var text = $("#chatInput").val();
+                    e.preventDefault();
+                    $("#chatHistory").append("<b>You</b> : <span class='blue'>" + text + "</span><br/>");
+                    positionHub.server.sendMessage(text, UserName);
+                    $(this).val("");
+                }
+            });
+            $.connection.hub.start().pipe(function () {
+                positionHub.server.askCurrentPosition();
+                positionHub.server.userJoined(UserName);
+                $("#chatHistory").append("<i class='green'>You joined the Chat.</i><br/>");
+            });
         });
 
     </script>
+    <style type="text/css">
+        html {
+            cursor: move;
+        }
+        body{ margin: 0;padding: 0;}
+        #chatBox{ float: right;height: 400px;width: 250px;border: 1px solid #afeeee;box-shadow: 0px 0px 3px rgba(0, 0, 0, .4);}
+        #chatHistory{ height: 300px; border-bottom: 1px solid #afeeee}
+        #chatInput{ height: 93px;resize: none;width: 245px;border: none;font-family: cursive;}
+            #chatInput:focus {outline: none;}
+            .blue{color:cadetblue}
+            .red{color:maroon}
+            .green{color:darkgreen}
+    </style>
 </head>
 <body>
     <div>
-        <div style="-webkit-border-radius: 10px; background: gray; border: 1px solid black; width: 80px; height: 80px; position: absolute;" id="ball">&nbsp;</div>
+        <div style="-webkit-border-radius: 10px; background: gray; border: 1px solid black; width: 80px; height: 80px; position: absolute; display: none" id="ball"></div>
     </div>
+    <div id="chatBox">
+        <div id="chatHistory">
+        </div>
+        <div>
+            <textarea id="chatInput"></textarea>
+        </div>
+    </div>
+    
 </body>

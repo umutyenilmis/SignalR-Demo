@@ -8,7 +8,6 @@ using System.Web.Routing;
 using Castle.Windsor;
 using Castle.Windsor.Installer;
 using SignalR.Core.Infrastructure.IoC;
-using SignalR.Hubs;
 
 namespace SignalR.Web
 {
@@ -37,11 +36,12 @@ namespace SignalR.Web
             AreaRegistration.RegisterAllAreas();
 
             RegisterGlobalFilters(GlobalFilters.Filters);
+            RouteTable.Routes.MapHubs();
             RegisterRoutes(RouteTable.Routes);
             _container = CreateContainer();
             ControllerBuilder.Current.SetControllerFactory(_container.Resolve<IControllerFactory>());
+            
         }
-
         private static IWindsorContainer _container;
 
         public IWindsorContainer Container
